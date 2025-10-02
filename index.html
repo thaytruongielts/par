@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IELTS Reading: Interactive Paraphrase Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chosen Palette: Warm Neutrals with Indigo Accent -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive learning explorer. It features a two-column layout where users click an original phrase to reveal its paraphrase and context, promoting active recall. A key feature is the set of filter buttons based on the "Function/Context" data, allowing users to study phrases thematically. This structure was chosen to transform the static source table into an engaging, user-controlled study tool that aids memory and understanding better than passive reading. -->
+    <!-- Visualization & Content Choices: Report Info: Paraphrase Pairs -> Goal: Organize & Compare -> Presentation: Interactive two-column list/display -> Interaction: Click-to-reveal, filter by context -> Justification: Encourages active learning and allows for focused study on specific types of academic language. Replaces a static table with a dynamic, engaging experience. Library/Method: Vanilla JS for DOM manipulation and event handling, Tailwind CSS for styling. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .phrase-item.active {
+            background-color: #4338ca; /* indigo-700 */
+            color: white;
+            transform: translateX(4px);
+        }
+        .filter-btn.active {
+            background-color: #312e81; /* indigo-900 */
+            color: white;
+        }
+        .phrase-item {
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800">
+
+    <div class="container mx-auto max-w-6xl p-4 sm:p-8">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-5xl font-bold text-indigo-800 mb-3">IELTS Academic Paraphrase Explorer</h1>
+            <p class="text-lg text-stone-600 max-w-3xl mx-auto">
+                Mastering IELTS Reading Passage 3 means recognizing ideas, not just words. This tool helps you practice identifying conceptual paraphrases used in academic texts.
+            </p>
+        </header>
+
+        <main class="bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+            
+            <section id="filters" class="mb-8">
+                <h2 class="text-xl font-bold text-stone-700 mb-4">Filter by Context:</h2>
+                <div id="filter-container" class="flex flex-wrap gap-2">
+                    <!-- Filter buttons will be injected here -->
+                </div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <aside id="phrase-list-container" class="border-r-0 lg:border-r lg:pr-8 border-stone-200">
+                    <h2 class="text-xl font-bold text-stone-700 mb-4">Original Phrase (From Question/Heading)</h2>
+                    <p class="text-stone-500 mb-4">Click on a phrase below to see how it might be paraphrased in the reading passage.</p>
+                    <div id="phrase-list" class="space-y-2 h-[60vh] overflow-y-auto pr-2">
+                        <!-- Phrase items will be injected here -->
+                    </div>
+                </aside>
+                
+                <section id="display-area" class="min-h-[300px]">
+                     <div id="display-content" class="sticky top-8 bg-stone-50 p-6 rounded-lg shadow-inner">
+                        <h2 class="text-xl font-bold text-stone-700 mb-4">Paraphrase & Context</h2>
+                        <div id="paraphrase-details">
+                            <p class="text-stone-500 text-center py-10">Select a phrase from the list to view its details.</p>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const paraphraseData = [
+            { original: "Long-term effects", paraphrase: "enduring impact / chronic consequences", context: "Results Over Time" },
+            { original: "A common misconception", paraphrase: "a widely held but mistaken belief / popular fallacy", context: "Challenging an Idea" },
+            { original: "Primary purpose", paraphrase: "fundamental aim / core objective / overriding goal", context: "Explaining Purpose" },
+            { original: "Inadequate resources", paraphrase: "severe lack of funding / insufficient provisions", context: "Limitations & Challenges" },
+            { original: "To justify the expenditure", paraphrase: "to validate the cost / provide a rationale for the investment", context: "Explaining Costs" },
+            { original: "Crucial factor", paraphrase: "pivotal element / determining component / vital consideration", context: "Highlighting Importance" },
+            { original: "Rapid technological shifts", paraphrase: "swift changes in methodology / pace of innovation", context: "Describing Change" },
+            { original: "Essential for survival", paraphrase: "indispensable to continued existence / prerequisite for viability", context: "Biological Needs" },
+            { original: "An unprecedented scale", paraphrase: "a magnitude never before witnessed / unique scope", context: "Describing Impact Size" },
+            { original: "Contributing factors", paraphrase: "elements that played a part / various inputs", context: "Listing Reasons" },
+            { original: "Controversial methods", paraphrase: "contentious approaches / disputed practices", context: "Disagreement" },
+            { original: "The detrimental impact", paraphrase: "the adverse effect / harmful influence / negative consequences", context: "Describing Bad Results" },
+            { original: "To gain insights into", paraphrase: "to achieve a deeper understanding of / to glean knowledge about", context: "Research Goals" },
+            { original: "Widely accepted theory", paraphrase: "prevailing viewpoint / established consensus / orthodox view", context: "Standard Beliefs" },
+            { original: "Highly adaptable", paraphrase: "demonstrating great versatility / possesses intrinsic flexibility", context: "Describing Adaptability" },
+            { original: "Future implications", paraphrase: "prospective consequences / what may happen next", context: "Future Relevance" },
+            { original: "Exclusively human", paraphrase: "unique to our species / not found elsewhere in the animal kingdom", context: "Distinguishing Traits" },
+            { original: "A fundamental re-evaluation", paraphrase: "a necessary paradigm shift / rethinking the basic principles", context: "Major Change Needed" },
+            { original: "Under stringent regulation", paraphrase: "subject to strict oversight / governed by rigorous controls", context: "Restrictions" },
+            { original: "Lack of clear evidence", paraphrase: "absence of conclusive data / unsubstantiated claims", context: "Questioning Validity" }
+        ];
+
+        const phraseListEl = document.getElementById('phrase-list');
+        const paraphraseDetailsEl = document.getElementById('paraphrase-details');
+        const filterContainerEl = document.getElementById('filter-container');
+
+        let activeFilter = 'All';
+
+        const renderList = () => {
+            phraseListEl.innerHTML = '';
+            const filteredData = activeFilter === 'All' 
+                ? paraphraseData 
+                : paraphraseData.filter(item => item.context === activeFilter);
+            
+            if (filteredData.length === 0) {
+                 phraseListEl.innerHTML = `<p class="text-stone-500 p-4">No phrases match this filter.</p>`;
+                 return;
+            }
+
+            filteredData.forEach((item, index) => {
+                // We need the original index to fetch from the main array
+                const originalIndex = paraphraseData.findIndex(p => p.original === item.original);
+                const itemEl = document.createElement('div');
+                itemEl.classList.add('phrase-item', 'p-3', 'rounded-md', 'cursor-pointer', 'hover:bg-indigo-600', 'hover:text-white', 'font-medium');
+                itemEl.textContent = item.original;
+                itemEl.dataset.index = originalIndex;
+                phraseListEl.appendChild(itemEl);
+            });
+        };
+
+        const displayDetails = (index) => {
+            const item = paraphraseData[index];
+            paraphraseDetailsEl.innerHTML = `
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-stone-500 mb-1">PARAPHRASE IN PASSAGE</h3>
+                        <p class="text-lg md:text-xl font-semibold text-indigo-700">${item.paraphrase}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-stone-500 mb-1">FUNCTION / CONTEXT</h3>
+                        <p class="text-md text-stone-800">${item.context}</p>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderFilters = () => {
+            const contexts = ['All', ...new Set(paraphraseData.map(item => item.context))];
+            filterContainerEl.innerHTML = '';
+            contexts.forEach(context => {
+                const btn = document.createElement('button');
+                btn.classList.add('filter-btn', 'px-4', 'py-2', 'text-sm', 'font-semibold', 'rounded-full', 'bg-stone-200', 'text-stone-700', 'hover:bg-stone-300', 'transition-colors');
+                if (context === activeFilter) {
+                    btn.classList.add('active');
+                }
+                btn.textContent = context;
+                btn.dataset.context = context;
+                filterContainerEl.appendChild(btn);
+            });
+        };
+        
+        phraseListEl.addEventListener('click', (e) => {
+            if (e.target.classList.contains('phrase-item')) {
+                const allItems = phraseListEl.querySelectorAll('.phrase-item');
+                allItems.forEach(item => item.classList.remove('active'));
+                e.target.classList.add('active');
+                const index = e.target.dataset.index;
+                displayDetails(index);
+            }
+        });
+
+        filterContainerEl.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                activeFilter = e.target.dataset.context;
+                paraphraseDetailsEl.innerHTML = `<p class="text-stone-500 text-center py-10">Select a phrase from the list to view its details.</p>`;
+                renderFilters();
+                renderList();
+            }
+        });
+
+        // Initial render
+        renderFilters();
+        renderList();
+    });
+    </script>
+</body>
+</html>
